@@ -8,6 +8,7 @@ import urllib2
 from lxml import etree
 
 import vlib.conf as conf
+from vlib.odict import odict
 from vlib.utils import echoized, validate_num_args
 
 DEBUG = 0
@@ -24,63 +25,33 @@ SP_TYPES = {0: 'text', 1: 'boolean', 2: 'numeric', 3: 'date', 4: 'time',
             20: 'Multi-Select' }
 
 class SilverpopApiError(Exception): pass
-class SilverpopApiParameterError(SilverpopApiError): pass
 
 class SilverpopApi(object):
+    
     def __init__(self):
         self.conf = conf.Factory.create().data
         self.jsessionid = None
         self.verbose = VERBOSE
 
-    def process(self, *args):
-        if not args: 
-            syntax()
+    def process(self, args):
+        args = odict(args)
+        cmd = args.cmd.lower()
 
-        # get verbose
-        if args[0] == '-v':
-            self.verbose = 1
-            args = args[1:]
-
-        # get command
-        command = self.validate('command', args[0])
-        args = args[1:]
-
-        # process command
-        if command == 'exportlist':
-            validate_num_args(command, 1, args)
-            list_id = args[0]
-            return self.exportList(list_id)
-        elif command == 'getlists':
-            relational_tables = False
-            if args:
-                rel = args[0]
-                if rel != 'relational':
-                    return 'Unrecognized list type: %s' % rel
-                relational_tables = True
-            return self.getLists(relational_tables)
-        elif command == 'getlistmetadata':
-            validate_num_args(command, 1, args)
-            list_id = args[0]
-            return self.getListMetaData(list_id)
-        elif command == 'importlist':
-            validate_num_args(command, 2, args)
-            return 'Not yet implemented'
+        if cmd == 'getlist':
+            return self.getLists(args.relational)
+            
+        elif cmd == 'getlistmetadata':
+            return self.getListMetaData(args.list_id)
+            
+        elif cmd == 'exportlist':
+            return self.exportList(args.list_id)
+            
+        elif cmd == 'InsertUpdateRelationalTable':
+            return self.InsertUpdateRelationalTable(args.list_id,
+                                                      args.csvfile)
         else:
-            raise SilverpopApiError('Unrecognized command: %s' % command)
-
-    def validate(self, param, value):
-        value = value.lower()
-        emsg = ''
-        if param == 'command':
-            if value not in COMMANDS:
-                emsg = 'Unrecognized command: %s' % value
-        else:
-            emsg = 'Unrecognized parameter: "%s" = "%s"' % (param, value)
-        if emsg:
-            raise SilverpopApiParameterError(emsg)
-
-        return value
-
+            return 'Unrecognized cmd:', cmd
+            
     def login(self):
         '''Wrapper to requests()'''
         username = self.conf['silverpop']['username']
@@ -228,25 +199,15 @@ def xml_str(xml):
 def xml_pretty(xml):
     return etree.tostring(xml, pretty_print=True)
 
-def syntax(emsg=None):
-    prog_name = os.path.basename(sys.argv[0])
-    if emsg:
-        print emsg
-    ws = ' '*len(prog_name)
-    print
-    print "   %s [-v] ExportList      <list_id>"      % prog_name
-    print "   %s      GetLists        [ relational ]"     % ws
-    print "   %s      GetListMetaData <list_id>" % ws
-    print "   %s      ImportList      <list_id> <csv_file>" % ws
-    sys.exit(1)
-
 def disp_results(results):
+    '''Display results formated nicely for the console'''
     if isinstance(results, (list, tuple)):
         if isinstance(results[0], (list, tuple)):
             for row in results:
                 print ",".join(map(str, row)),
                 print
         else:
+            print 'e'
             print "\n".join(map(str, results))
     elif isinstance(results, dict):
         keys = sorted(results.keys())
@@ -255,19 +216,52 @@ def disp_results(results):
     else:
         print results
 
+def syntax():
+    prog_name = os.path.basename(sys.argv[0])
+    ws = ' '*len(prog_name)
+    o = ''
+    o += "\n"
+    o += "   %s [-v] ExportList           <list_id>\n"      % prog_name
+    o += "   %s      GetLists             [ --relational ]\n"     % ws
+    o += "   %s      GetListMetaData      <list_id>\n" % ws
+    o += "   %s      ImportUpdateRelTable <list_id> <csv_file>\n" % ws
+    o += "\n"
+    return o
+
+def parseArgs():
+    import argparse
+    p = argparse.ArgumentParser(description="Silverpop API", usage=syntax())
+    p.add_argument('-v', dest='verbose', action='store_true',
+                   help='verbose')
+    sp = p.add_subparsers(dest='cmd')
+
+    q = sp.add_parser('GetList', help='Get list of tables')
+    q.add_argument('--relational', action='store_true',
+                   help='list relational tables')
+
+    q = sp.add_parser('GetListMetaData', help='Get table column information')
+    q.add_argument('list_id')
+
+    q = sp.add_parser('ExportList', help='Export data to download site')
+    q.add_argument('list_id')
+
+    q = sp.add_parser('InsertUpdateRelTable', help='Import/Update '
+                      'csvfile to relational table')
+    q.add_argument('list_id')
+    q.add_argument('csvfile')
+
+    args = p.parse_args()
+    return vars(args)
+
 if __name__ == '__main__':
-    if DEBUG:
-        sp = echoized(SilverpopApi)()
-    else:
-        sp = SilverpopApi()
+    args = parseArgs()
+    VERBOSE = args['verbose']
 
-    args = copy.copy(sys.argv[1:])
     try:
-        results = sp.process(*args)
+        disp_results(SilverpopApi().process(args))
     except Exception, e:
-        if DEBUG:
+        if VERBOSE:
             raise
-        results = '%s: %s' % (e.__class__.__name__, e)
-
-    disp_results(results)
+        print "%s:%s" % (e.__class__.__name__, e)
+        
 
