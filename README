@@ -1,0 +1,12 @@
+Command Line Interface, and General Purpose Library to Silverpop API.
+
+Requires: 
+  - lxml
+  - github.com/dlink/vbin
+
+Command Line Usage:
+
+   silverpopapi.py [-v] ExportList      <list_id>
+                        GetLists        [ relational ]
+                        GetListMetaData <list_id>
+                        ImportList      <list_id> <csv_file>
