@@ -1,8 +1,8 @@
-Command Line Interface, and General Purpose Library to Silverpop API.
+Command Line, and Python Interface to Silverpop API.
 
 Requires: 
   - lxml
-  - github.com/dlink/vbin
+  - github.com/dlink/vlib
 
 Command Line Usage:
 
