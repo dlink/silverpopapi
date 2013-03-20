@@ -14,8 +14,6 @@ from vlib.utils import echoized, validate_num_args
 DEBUG = 0
 VERBOSE = 0
 
-COMMANDS = ('exportlist', 'getlists', 'getlistmetadata', 'importlist')
-
 ENVELOPE = '<Envelope><Body></Body></Envelope>'
 
 SP_TYPES = {0: 'text', 1: 'boolean', 2: 'numeric', 3: 'date', 4: 'time',
