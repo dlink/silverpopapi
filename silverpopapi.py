@@ -52,8 +52,8 @@ class SilverpopApi(object):
             
     def login(self):
         '''Wrapper to requests()'''
-        username = self.conf['silverpop']['username']
-        password = self.conf['silverpop']['password']        
+        username = self.conf.silverpop.username
+        password = self.conf.silverpop.password
         params   = {'USERNAME': username, 'PASSWORD': password}
         xrequest = xml_str(self.buildRequestEtree('Login', params))
         xresults = self.request(xrequest, logging_in=True)
@@ -137,7 +137,7 @@ class SilverpopApi(object):
 
               Returns Resultant XML
         '''
-        url     = self.conf['silverpop']['url']
+        url     = self.conf.silverpop.url
         headers = {'Content-Type': 'text/xml;charset=UTF-8'}        
 
         # add jsessionid:
