@@ -61,7 +61,17 @@ class SilverpopApi(object):
         self.jsessionid = xresults.xpath(xpath)[0].text
 
     def exportList(self, list_id):
-        '''Wrapper to requests()'''
+        '''Given a list_id, call the ExportList API.
+           calls request()
+
+           What's returned is the name of the new downloadable file
+           from ftp site.
+           
+           The file can them be fetched with (TO DO: automate this)
+
+             curl -u username:password \
+                  ftp://transfer5.silverpop.com/download/<filename>
+        '''
         params = {'LIST_ID'      : list_id,
                   'EXPORT_TYPE'  : 'ALL',
                   'EXPORT_FORMAT': 'CSV',
