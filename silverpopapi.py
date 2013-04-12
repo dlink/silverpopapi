@@ -36,7 +36,7 @@ class SilverpopApi(object):
         cmd = args.cmd.lower()
 
         if cmd == 'getlist':
-            return self.getLists(args.relational)
+            return self.getList(args.relational)
             
         elif cmd == 'getlistmetadata':
             return self.getListMetaData(args.list_id)
@@ -44,7 +44,7 @@ class SilverpopApi(object):
         elif cmd == 'exportlist':
             return self.exportList(args.list_id)
             
-        elif cmd == 'InsertUpdateRelationalTable':
+        elif cmd == 'insertupdaterelationaltable':
             return self.InsertUpdateRelationalTable(args.list_id,
                                                       args.csvfile)
         else:
@@ -70,13 +70,13 @@ class SilverpopApi(object):
         xpath = '/Envelope/Body/RESULT/FILE_PATH'
         return xresults.xpath(xpath)[0].text
 
-    def getLists(self, relational_tables=False):
+    def getList(self, relational_tables=False):
         '''Wrapper to requests()'''
         if relational_tables:
             params = {'VISIBILITY': '1', 'LIST_TYPE': '15'} 
         else:
             params = {'VISIBILITY': '1', 'LIST_TYPE': '2'}
-        xresults = self.request('GetLists', params)
+        xresults = self.request('GetList', params)
         xpath = '/Envelope/Body/RESULT/LIST'
         Lists = []
         for List in xresults.xpath(xpath):
@@ -110,6 +110,12 @@ class SilverpopApi(object):
             Columns.append([num, name, type, default_value, selection_values])
         return Columns
 
+    def InsertUpdateRelationalTable(self, list_id, csv_file):
+        '''Wrapper to requests()'''
+        params = {'TABLE_ID': list_id,
+                  'ROWS': {'ROW': 'X'}}
+        xresults = self.request('ImportUpdateRelationalTable', params)
+        
     def request(self, request_name, params):
         '''Given the request_name and a dictionary of key:value pairs
            Make Silverpop API Request call.
@@ -130,7 +136,8 @@ class SilverpopApi(object):
             print '%s: xrequest:\n%s' % (request_name, xml_pretty(xrequest))
 
         # Call API:
-        req = urllib2.Request(url=url, headers=headers, data=xml_str(xrequest))
+        if request_name == 'Login':
+            req = urllib2.Request(url=url, headers=headers, data=xml_str(xrequest))
         fp = urllib2.urlopen(req)
         xresults = etree.fromstring(fp.read())
         if self.verbose:
@@ -220,9 +227,9 @@ def syntax():
     o = ''
     o += "\n"
     o += "   %s [-v] ExportList           <list_id>\n"      % prog_name
-    o += "   %s      GetLists             [ --relational ]\n"     % ws
+    o += "   %s      GetList              [ --relational ]\n"     % ws
     o += "   %s      GetListMetaData      <list_id>\n" % ws
-    o += "   %s      ImportUpdateRelTable <list_id> <csv_file>\n" % ws
+    o += "   %s      ImportUpdateRelationalTable <list_id> <csv_file>\n" % ws
     o += "\n"
     return o
 
@@ -243,7 +250,7 @@ def parseArgs():
     q = sp.add_parser('ExportList', help='Export data to download site')
     q.add_argument('list_id')
 
-    q = sp.add_parser('InsertUpdateRelTable', help='Import/Update '
+    q = sp.add_parser('InsertUpdateRelationalTable', help='Import/Update '
                       'csvfile to relational table')
     q.add_argument('list_id')
     q.add_argument('csvfile')
