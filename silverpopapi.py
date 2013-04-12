@@ -112,9 +112,11 @@ class SilverpopApi(object):
 
     def InsertUpdateRelationalTable(self, list_id, csv_file):
         '''Wrapper to requests()'''
-        params = {'TABLE_ID': list_id,
-                  'ROWS': {'ROW': 'X'}}
-        xresults = self.request('ImportUpdateRelationalTable', params)
+        raise SiverpopApiError('not yet impemented')
+
+        #params = {'TABLE_ID': list_id,
+        #          'ROWS': {'ROW': 'X'}}
+        #xresults = self.request('ImportUpdateRelationalTable', params)
         
     def request(self, request_name, params):
         '''Given the request_name and a dictionary of key:value pairs
@@ -136,8 +138,7 @@ class SilverpopApi(object):
             print '%s: xrequest:\n%s' % (request_name, xml_pretty(xrequest))
 
         # Call API:
-        if request_name == 'Login':
-            req = urllib2.Request(url=url, headers=headers, data=xml_str(xrequest))
+        req = urllib2.Request(url=url, headers=headers, data=xml_str(xrequest))
         fp = urllib2.urlopen(req)
         xresults = etree.fromstring(fp.read())
         if self.verbose:
