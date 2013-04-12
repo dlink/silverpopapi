@@ -125,9 +125,33 @@ class SilverpopApi(object):
         return Columns
 
     def InsertUpdateRelationalTable(self, list_id, csv_file):
-        '''Wrapper to requests()'''
-        raise SilverpopApiError('not yet implemented')
+        '''Given a List_id and a csv_file
+              Column header names must  match List Field names.
+              Make Silverpop API Request Call
+              Returns Resultant XML
+        '''
+        import csv
         
+        # build xml request from csv_file:
+        request = etree.Element('InsertUpdateRelationalTable')
+        etree.SubElement(request, 'TABLE_ID').text = list_id
+        #etree.SubElement(request, 'LIST_DATE_FORMAT').text = 'yyyy-mm-dd'
+        xrows = etree.SubElement(request, 'ROWS')
+        for n, row in enumerate(csv.reader(open(csv_file, 'r'))):
+            if n == 0:
+                header = row
+                continue
+            xrow = etree.SubElement(xrows, 'ROW')
+            for i, c in enumerate(row):
+                etree.SubElement(xrow, 'COLUMN', 
+                                 attrib={'name': header[i]}).text = c
+        envelope = etree.fromstring(ENVELOPE)
+        envelope[0].append(request)
+        xrequest = xml_str(envelope)
+        xresults = self.request(xrequest)
+        xpath = '/Envelope/Body/FAILURES/FAILURE'
+        return '%s Row(s) Inserted or Updated' % n
+
     def request(self, xrequest, logging_in=False):
         '''Given a request as XML in a string
               Read url, username, and password from conf
@@ -163,6 +187,15 @@ class SilverpopApi(object):
             xpath = '/Envelope/Body/Fault/FaultString'
             faultstring = xresults.xpath(xpath)[0].text
             raise SilverpopApiError(faultstring)
+
+        # check for FAILURES (InsertUpdateRelationalTable for one 
+        # returns both SUCCESS and FAILURES - go figure
+        xpath = '/Envelope/Body/RESULT/FAILURES/FAILURE'
+        failures = xresults.xpath(xpath)
+        if failures:
+            msg = '; '.join(['%s. %s' % (i+1, x.attrib['description']) 
+                             for i, x in enumerate(failures)])
+            raise SilverpopApiError(msg)
 
         # Return results as etree:
         return xresults
