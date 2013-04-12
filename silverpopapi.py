@@ -55,7 +55,8 @@ class SilverpopApi(object):
         username = self.conf['silverpop']['username']
         password = self.conf['silverpop']['password']        
         params   = {'USERNAME': username, 'PASSWORD': password}
-        xresults = self.request('Login', params)
+        xrequest = xml_str(self.buildRequestEtree('Login', params))
+        xresults = self.request(xrequest, logging_in=True)
 
         xpath = '/Envelope/Body/RESULT/SESSIONID'
         self.jsessionid = xresults.xpath(xpath)[0].text
@@ -76,7 +77,8 @@ class SilverpopApi(object):
                   'EXPORT_TYPE'  : 'ALL',
                   'EXPORT_FORMAT': 'CSV',
                   'FILE_ENCODING': 'utf-8'}
-        xresults = self.request('ExportList', params)
+        xrequest = xml_str(self.buildRequestEtree('ExportList', params))
+        xresults = self.request(xrequest)
         xpath = '/Envelope/Body/RESULT/FILE_PATH'
         return xresults.xpath(xpath)[0].text
 
@@ -86,7 +88,8 @@ class SilverpopApi(object):
             params = {'VISIBILITY': '1', 'LIST_TYPE': '15'} 
         else:
             params = {'VISIBILITY': '1', 'LIST_TYPE': '2'}
-        xresults = self.request('GetLists', params)
+        xrequest = xml_str(self.buildRequestEtree('GetLists', params))
+        xresults = self.request(xrequest)
         xpath = '/Envelope/Body/RESULT/LIST'
         Lists = []
         for List in xresults.xpath(xpath):
@@ -98,7 +101,8 @@ class SilverpopApi(object):
     def getListMetaData(self, list_id):
         '''Wrapper to requests()'''
         params = {'LIST_ID': list_id}
-        xresults = self.request('GetListMetaData', params)
+        xrequest = xml_str(self.buildRequestEtree('GetListMetaData', params))
+        xresults = self.request(xrequest)
         xpath = '/Envelope/Body/RESULT/COLUMNS/COLUMN'
         num = 0
         Columns = []
@@ -122,37 +126,35 @@ class SilverpopApi(object):
 
     def InsertUpdateRelationalTable(self, list_id, csv_file):
         '''Wrapper to requests()'''
-        raise SiverpopApiError('not yet impemented')
-
-        #params = {'TABLE_ID': list_id,
-        #          'ROWS': {'ROW': 'X'}}
-        #xresults = self.request('ImportUpdateRelationalTable', params)
+        raise SilverpopApiError('not yet implemented')
         
-    def request(self, request_name, params):
-        '''Given the request_name and a dictionary of key:value pairs
-           Make Silverpop API Request call.
-           Return Resultant XML
+    def request(self, xrequest, logging_in=False):
+        '''Given a request as XML in a string
+              Read url, username, and password from conf
+              Log into Silverpop API and gets a session.
+              Make Silverpop API Request Call
+              (logging_in option only used during login)
+
+              Returns Resultant XML
         '''
         url     = self.conf['silverpop']['url']
         headers = {'Content-Type': 'text/xml;charset=UTF-8'}        
 
         # add jsessionid:
-        if request_name not in ('Login'):
+        if not logging_in:
             if not self.jsessionid:
                 self.login()
             url += ';jsessionid=%s' % self.jsessionid
 
-        # build request xml:
-        xrequest = self.buildRequestEtree(request_name, params)
         if self.verbose:
-            print '%s: xrequest:\n%s' % (request_name, xml_pretty(xrequest))
+            print 'xrequest:\n%s' % xrequest
 
         # Call API:
-        req = urllib2.Request(url=url, headers=headers, data=xml_str(xrequest))
+        req = urllib2.Request(url=url, headers=headers, data=xrequest)
         fp = urllib2.urlopen(req)
         xresults = etree.fromstring(fp.read())
         if self.verbose:
-            print '%s: xresults:\n%s' % (request_name, xml_pretty(xresults))
+            print 'xresults:\n%s' % xml_str(xresults)
             
         # check results:
         xpath = '/Envelope/Body/RESULT/SUCCESS'
@@ -210,9 +212,6 @@ def disp_results(results):
 
 
 def xml_str(xml):
-    return etree.tostring(xml)
-
-def xml_pretty(xml):
     return etree.tostring(xml, pretty_print=True)
 
 def disp_results(results):
