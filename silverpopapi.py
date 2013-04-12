@@ -35,8 +35,8 @@ class SilverpopApi(object):
         args = odict(args)
         cmd = args.cmd.lower()
 
-        if cmd == 'getlist':
-            return self.getList(args.relational)
+        if cmd == 'getlists':
+            return self.getLists(args.relational)
             
         elif cmd == 'getlistmetadata':
             return self.getListMetaData(args.list_id)
@@ -70,13 +70,13 @@ class SilverpopApi(object):
         xpath = '/Envelope/Body/RESULT/FILE_PATH'
         return xresults.xpath(xpath)[0].text
 
-    def getList(self, relational_tables=False):
+    def getLists(self, relational_tables=False):
         '''Wrapper to requests()'''
         if relational_tables:
             params = {'VISIBILITY': '1', 'LIST_TYPE': '15'} 
         else:
             params = {'VISIBILITY': '1', 'LIST_TYPE': '2'}
-        xresults = self.request('GetList', params)
+        xresults = self.request('GetLists', params)
         xpath = '/Envelope/Body/RESULT/LIST'
         Lists = []
         for List in xresults.xpath(xpath):
@@ -228,7 +228,7 @@ def syntax():
     o = ''
     o += "\n"
     o += "   %s [-v] ExportList           <list_id>\n"      % prog_name
-    o += "   %s      GetList              [ --relational ]\n"     % ws
+    o += "   %s      GetLists             [ --relational ]\n"     % ws
     o += "   %s      GetListMetaData      <list_id>\n" % ws
     o += "   %s      ImportUpdateRelationalTable <list_id> <csv_file>\n" % ws
     o += "\n"
@@ -241,7 +241,7 @@ def parseArgs():
                    help='verbose')
     sp = p.add_subparsers(dest='cmd')
 
-    q = sp.add_parser('GetList', help='Get list of tables')
+    q = sp.add_parser('GetLists', help='Get list of tables')
     q.add_argument('--relational', action='store_true',
                    help='list relational tables')
 
