@@ -9,7 +9,7 @@ from lxml import etree
 
 import vlib.conf as conf
 from vlib.odict import odict
-from vlib.utils import echoized, validate_num_args
+from vlib.utils import echoized, validate_num_args, str2datetime
 
 DEBUG = 0
 VERBOSE = 0
@@ -95,7 +95,9 @@ class SilverpopApi(object):
         for List in xresults.xpath(xpath):
             id = List.xpath('./ID')[0].text
             name = List.xpath('./NAME')[0].text
-            Lists.append([id, name])
+            last_modified = List.xpath('./LAST_MODIFIED')[0].text
+            last_modified = str2datetime(last_modified, "%m/%d/%y %I:%M %p")
+            Lists.append([id, name, last_modified])
         return Lists
 
     def getListMetaData(self, list_id):
