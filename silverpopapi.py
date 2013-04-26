@@ -145,8 +145,9 @@ class SilverpopApi(object):
                 continue
             xrow = etree.SubElement(xrows, 'ROW')
             for i, c in enumerate(row):
-                etree.SubElement(xrow, 'COLUMN', 
-                                 attrib={'name': header[i]}).text = c
+                etree.SubElement(
+                    xrow, 'COLUMN', 
+                    attrib={'name': header[i]}).text = c.decode('utf8')
         envelope = etree.fromstring(ENVELOPE)
         envelope[0].append(request)
         xrequest = xml_str(envelope)
